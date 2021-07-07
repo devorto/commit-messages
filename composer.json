@@ -1,0 +1,25 @@
+{
+    "name": "devorto/commit-messages",
+    "description": "Github action script for checking commit messages.",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Devorto",
+            "email": "info@devorto.com",
+            "homepage": "https://www.devorto.com",
+            "role": "Owner"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.4.0|^8.0.0",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "symfony/console": "^5.3.0"
+    }
+}
