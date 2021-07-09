@@ -3,6 +3,7 @@
 namespace App\Commands;
 
 use App\Services\GithubActionConfig;
+use App\Services\GithubApiCommands;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,15 +21,22 @@ class CommitMessages extends Command
     protected GithubActionConfig $config;
 
     /**
+     * @var GithubApiCommands
+     */
+    protected GithubApiCommands $apiCommands;
+
+    /**
      * CommitMessages constructor.
      *
      * @param GithubActionConfig $config
+     * @param GithubApiCommands $apiCommands
      */
-    public function __construct(GithubActionConfig $config)
+    public function __construct(GithubActionConfig $config, GithubApiCommands $apiCommands)
     {
         parent::__construct();
 
         $this->config = $config;
+        $this->apiCommands = $apiCommands;
     }
 
     /**
@@ -60,14 +68,15 @@ class CommitMessages extends Command
         );
 
         if ($return !== 0) {
-            echo 'Could not generated history for commit hashes.';
-            exit(1);
+            $output->writeln('Could not generate history for commit hashes.');
+
+            return 1;
         }
 
         $exitCode = 0;
         foreach ($commitHashes as $commitHash) {
             $message = shell_exec('git log --format=%B -n 1 ' . $commitHash);
-            echo "Validating commit message:\n$message\n\n";
+            $output->writeln(["Validating commit message:", $message, '']);
             if (preg_match("/.{0,50}\n\n.+/", $message) === 1) {
                 continue;
             }
@@ -84,40 +93,11 @@ Subject (Max 50 characters)
 Long description
 ```
 MESSAGE;
-            $this->placeComment($message);
+            $this->apiCommands->placeIssueComment($message);
 
             $exitCode = 1;
         }
 
         return $exitCode;
-    }
-
-    /**
-     * @param string $message
-     */
-    protected function placeComment(string $message)
-    {
-        $curl = curl_init(sprintf(
-            '%s/repos/%s/issues/%s/comments',
-            $this->config->apiUrl(),
-            $this->config->repository(),
-            $this->config->pullRequestNumber()
-        ));
-        curl_setopt_array(
-            $curl,
-            [
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode(['body' => $message]),
-                CURLOPT_HTTPHEADER => [
-                    'Accept: application/vnd.github.v3+json',
-                    'Content-Type: application/json',
-                    'Authorization: Token ' . $this->config->token(),
-                    'User-Agent: ' . $this->config->actor()
-                ],
-                CURLOPT_RETURNTRANSFER => true
-            ]
-        );
-        curl_exec($curl);
-        curl_close($curl);
     }
 }
