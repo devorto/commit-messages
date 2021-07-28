@@ -77,27 +77,56 @@ class CommitMessages extends Command
         foreach ($commitHashes as $commitHash) {
             $message = shell_exec('git log --format=%B -n 1 ' . $commitHash);
             $output->writeln(["Validating commit message:", $message, '']);
-            if (preg_match("/.{0,50}\n\n.+/", $message) === 1) {
-                continue;
+
+            if (preg_match("/.{0,50}\n\n.+/", $message) !== 1) {
+                $this->placeComment();
+                break;
+            } elseif (!$this->messageLengthValid($message)) {
+                $this->placeComment();
+                break;
             }
-
-            $message = <<<MESSAGE
-Commit $commitHash, with message:
-```
-$message
-```
-Has an invalid format, it should be:
-```
-Subject (Max 50 characters)
-
-Long description
-```
-MESSAGE;
-            $this->apiCommands->placeIssueComment($message);
 
             $exitCode = 1;
         }
 
         return $exitCode;
+    }
+
+    /**
+     * Add comment to github.
+     */
+    protected function placeComment(): void
+    {
+        $message = <<<MESSAGE
+Pull request has one or more commits with invalid format.
+The format of a commit should be:
+```
+Subject (Max 50 characters)
+-- blank line --
+Long description (Max 72 characters)
+```
+MESSAGE;
+        $this->apiCommands->placeIssueComment($message);
+    }
+
+    /**
+     * Validate commit message length.
+     *
+     * @param string $message
+     *
+     * @return bool
+     */
+    protected function messageLengthValid(string $message): bool
+    {
+        $message = explode("\n", $message);
+        // Remove title and empty line.
+        array_splice($message, 2);
+        foreach ($message as $line) {
+            if (mb_strlen($line) > 72) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
