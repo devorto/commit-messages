@@ -91,6 +91,7 @@ TXT;
         $output->writeln($message);
 
         $this->apiCommands->placeIssueComment($message);
+        $this->apiCommands->closePullRequest();
 
         return 1;
     }

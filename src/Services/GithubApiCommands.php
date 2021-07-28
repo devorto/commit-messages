@@ -45,8 +45,32 @@ class GithubApiCommands
                     'Content-Type: application/json',
                     'Authorization: Token ' . $this->config->token(),
                     'User-Agent: ' . $this->config->actor()
-                ],
-                CURLOPT_RETURNTRANSFER => true
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    public function closePullRequest(): void
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/pulls/%s',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $this->config->pullRequestNumber()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_CUSTOMREQUEST => 'PATCH',
+                CURLOPT_POSTFIELDS => json_encode(['state' => 'closed']),
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
             ]
         );
         curl_exec($curl);
