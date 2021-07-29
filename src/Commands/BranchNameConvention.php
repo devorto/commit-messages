@@ -84,7 +84,7 @@ class BranchNameConvention extends Command
             throw new RuntimeException('Missing pull request event json file.');
         }
 
-        $json = json_decode($jsonFile, true);
+        $json = json_decode(file_get_contents($jsonFile), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new RuntimeException(json_last_error_msg());
         }

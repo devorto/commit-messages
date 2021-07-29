@@ -36,12 +36,12 @@ class CodeOwnersFile
         }
 
         foreach ($content as $owner) {
-            $owner = explode(' ', $owner);
-
             // Currently only support full repository owners.
             if (substr($owner, 0, 1) !== '*') {
                 continue;
             }
+
+            $owner = explode(' ', $owner);
 
             // Multiple owners per line possible, so remove path and merge the owners.
             array_shift($owner);
