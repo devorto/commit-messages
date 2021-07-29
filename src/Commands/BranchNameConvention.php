@@ -2,8 +2,10 @@
 
 namespace App\Commands;
 
+use App\Services\CodeOwnersFile;
 use App\Services\GithubActionConfig;
 use App\Services\GithubApiCommands;
+use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,17 +28,27 @@ class BranchNameConvention extends Command
     protected GithubApiCommands $apiCommands;
 
     /**
+     * @var CodeOwnersFile
+     */
+    protected CodeOwnersFile $codeOwnersFile;
+
+    /**
      * BranchName constructor.
      *
      * @param GithubActionConfig $config
      * @param GithubApiCommands $apiCommands
+     * @param CodeOwnersFile $codeOwnersFile
      */
-    public function __construct(GithubActionConfig $config, GithubApiCommands $apiCommands)
-    {
+    public function __construct(
+        GithubActionConfig $config,
+        GithubApiCommands $apiCommands,
+        CodeOwnersFile $codeOwnersFile
+    ) {
         parent::__construct();
 
         $this->config = $config;
         $this->apiCommands = $apiCommands;
+        $this->codeOwnersFile = $codeOwnersFile;
     }
 
     /**
@@ -57,18 +69,33 @@ class BranchNameConvention extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if (empty($_SERVER['branch_regex'])) {
+            throw new RuntimeException('Missing "branch_regex" variable in environment.');
+        }
+        if (empty($_SERVER['decline_message'])) {
+            $message = 'Invalid branch name.';
+        } else {
+            $message = $_SERVER['decline_message'];
+        }
+
         $branch = $this->config->headRef();
-        $parts = explode('/', $branch);
-        if (count($parts) !== 2) {
-            return $this->fail($output);
+        $jsonFile = $this->config->eventPath();
+        if (!file_exists($jsonFile)) {
+            throw new RuntimeException('Missing pull request event json file.');
         }
 
-        if (!in_array($parts[0], ['feature', 'bugfix', 'styling'])) {
-            return $this->fail($output);
+        $json = json_decode($jsonFile, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException(json_last_error_msg());
         }
 
-        if (1 !== preg_match('/^[a-z]+\/[0-9]+-[a-z0-9-]+$/', $branch)) {
-            return $this->fail($output);
+        if (in_array($json['pull_request']['user']['login'], $this->codeOwnersFile->getRepositoryOwners())) {
+            // PR done by code owner, so this check is not required.
+            return 0;
+        }
+
+        if (1 !== preg_match($_SERVER['branch_regex'], $branch)) {
+            return $this->fail($output, $message);
         }
 
         return 0;
@@ -76,18 +103,12 @@ class BranchNameConvention extends Command
 
     /**
      * @param OutputInterface $output
+     * @param string $message
      *
      * @return int
      */
-    protected function fail(OutputInterface $output): int
+    protected function fail(OutputInterface $output, string $message): int
     {
-        $message = <<<TXT
-Invalid branch name.
-
-Format should be: type/issue(or-ticket-number)-short-description
-Type is one of the following: feature/bugfix/styling.
-Short description should be lowercase a-z, 0-9 and - only.
-TXT;
         $output->writeln($message);
 
         $this->apiCommands->placeIssueComment($message);
