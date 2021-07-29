@@ -78,11 +78,13 @@ class CommitMessages extends Command
             $message = shell_exec('git log --format=%B -n 1 ' . $commitHash);
             $output->writeln(["Validating commit message:", $message, '']);
 
-            if (preg_match("/.{0,50}\n\n.+/", $message) !== 1) {
+            if (preg_match("/.{0,50}\n\n.{20,}/", $message) !== 1) {
                 $this->placeComment();
                 $exitCode = 1;
                 break;
-            } elseif (!$this->messageLengthValid($message)) {
+            }
+
+            if (!$this->messageLengthValid($message)) {
                 $this->placeComment();
                 $exitCode = 1;
                 break;
@@ -101,9 +103,9 @@ class CommitMessages extends Command
 Pull request has one or more commits with invalid format.
 The format of a commit should be:
 ```
-Subject (Max 50 characters)
+Subject (Min 3 words. Max 50 characters.)
 -- blank line --
-Long description (Max 72 characters)
+Long description, can be multiple lines (Min 20 characters, Max 72 characters per line)
 ```
 MESSAGE;
         $this->apiCommands->placeIssueComment($message);
@@ -118,9 +120,22 @@ MESSAGE;
      */
     protected function messageLengthValid(string $message): bool
     {
-        $message = explode("\n", $message);
+        // Split lines.
+        $message = array_filter(explode("\n", $message), 'trim');
+        if (empty($message)) {
+            return false;
+        }
+
         // Remove title and empty line.
-        array_splice($message, 2);
+        $body = array_shift($message);
+        if (count(explode(' ', $body)) < 3) {
+            return false;
+        }
+
+        if (empty($message)) {
+            return false;
+        }
+
         foreach ($message as $line) {
             if (mb_strlen($line) > 72) {
                 return false;
