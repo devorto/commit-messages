@@ -80,13 +80,13 @@ class CommitMessages extends Command
 
             if (preg_match("/.{0,50}\n\n.+/", $message) !== 1) {
                 $this->placeComment();
+                $exitCode = 1;
                 break;
             } elseif (!$this->messageLengthValid($message)) {
                 $this->placeComment();
+                $exitCode = 1;
                 break;
             }
-
-            $exitCode = 1;
         }
 
         return $exitCode;
