@@ -91,7 +91,7 @@ class CommitMessages extends Command
                 'Empty line between subject/body.' => preg_match('/.*\n\n.*/', $message) === 1,
                 'Subject not in body.' => !empty($messageParts[0])
                     && !empty($messageParts[2])
-                    && stripos($messageParts[2], trim($messageParts[0], " \t\n\r\0\x0B.")) !== false,
+                    && stripos($messageParts[2], trim($messageParts[0], " \t\n\r\0\x0B.")) === false,
                 'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2
             ];
 
