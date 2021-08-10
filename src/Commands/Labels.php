@@ -125,7 +125,7 @@ class Labels extends Command
                     $apiLabel['description']
                 ];
                 if ($label !== $apiLabel) {
-                    $this->apiCommands->deleteLabel($apiLabel['name']);
+                    $this->apiCommands->deleteLabel($apiLabel[0]);
                     $this->apiCommands->createLabel(...$label);
                 }
             } else {
