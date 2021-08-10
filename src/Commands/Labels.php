@@ -111,26 +111,44 @@ class Labels extends Command
     protected function updateRepositoryLabels(array $labels)
     {
         $apiLabels = $this->apiCommands->getLabels();
-        foreach ($apiLabels as $apiLabel) {
-            if (isset($labels[$apiLabel['name']])) {
-                $label = $labels[$apiLabel['name']];
-                $label = [
-                    $label['name'],
-                    $label['color'],
-                    $label['description']
-                ];
-                $apiLabel = [
-                    $apiLabel['name'],
-                    $apiLabel['color'],
-                    $apiLabel['description']
-                ];
-                if ($label !== $apiLabel) {
-                    $this->apiCommands->deleteLabel($apiLabel[0]);
-                    $this->apiCommands->createLabel(...$label);
+
+        $new = array_keys($labels);
+        $delete = array_map(
+            function (array $data): string {
+                return $data['name'];
+            },
+            $apiLabels
+        );
+        $updates = array_intersect($new, $delete);
+
+        foreach ($updates as $update) {
+            unset($new[array_search($update, $new)]);
+            unset($delete[array_search($update, $delete)]);
+
+            foreach ($apiLabels as $apiLabel) {
+                if ($apiLabel['name'] === $update) {
+                    if (
+                        $apiLabel['color'] !== $labels[$update]['color']
+                        || $apiLabel['description'] !== $labels[$update]['description']
+                    ) {
+                        $this->apiCommands->deleteLabel($update);
+                        $this->apiCommands->createLabel(
+                            $update,
+                            $labels[$update]['color'],
+                            $labels['update']['description']
+                        );
+                    }
+                    break;
                 }
-            } else {
-                $this->apiCommands->deleteLabel($apiLabel['name']);
             }
+        }
+
+        foreach ($new as $key) {
+            $this->apiCommands->createLabel($key, $labels[$key]['color'], $labels[$key]['description']);
+        }
+
+        foreach ($delete as $key) {
+            $this->apiCommands->deleteLabel($key);
         }
     }
 }
