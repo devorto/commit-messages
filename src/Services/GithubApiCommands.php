@@ -129,6 +129,9 @@ class GithubApiCommands
         curl_close($curl);
     }
 
+    /**
+     *
+     */
     public function closePullRequest(): void
     {
         $curl = curl_init(sprintf(
@@ -155,6 +158,9 @@ class GithubApiCommands
         curl_close($curl);
     }
 
+    /**
+     * @return array
+     */
     public function getLabels(): array
     {
         $curl = curl_init(sprintf(
@@ -194,6 +200,11 @@ class GithubApiCommands
         return $data;
     }
 
+    /**
+     * @param string $name
+     * @param string $color
+     * @param string $description
+     */
     public function createLabel(string $name, string $color, string $description): void
     {
         $curl = curl_init(sprintf(
@@ -219,6 +230,9 @@ class GithubApiCommands
         curl_close($curl);
     }
 
+    /**
+     * @param string $name
+     */
     public function deleteLabel(string $name): void
     {
         $curl = curl_init(sprintf(
@@ -244,6 +258,9 @@ class GithubApiCommands
         curl_close($curl);
     }
 
+    /**
+     * @param string ...$label
+     */
     public function setPullRequestLabel(string ...$label): void
     {
         $curl = curl_init(sprintf(
@@ -258,6 +275,35 @@ class GithubApiCommands
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'PUT',
                 CURLOPT_POSTFIELDS => json_encode(['labels' => $label]),
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    /**
+     * @param string ...$assignee
+     */
+    public function setAssignee(string ...$assignee): void
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/issues/%s/assignees',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $this->config->pullRequestNumber()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => json_encode(['assignees' => $assignee]),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
                     'Content-Type: application/json',
