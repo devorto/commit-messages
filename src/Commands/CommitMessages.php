@@ -88,13 +88,13 @@ class CommitMessages extends Command
                 'Subject: Min. 3 words.' => !empty($messageParts[0]) && count(explode(' ', $messageParts[0])) > 2,
                 'Subject: No unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
                 'Empty line between subject/body.' => preg_match('/.*\n\n.*/', $message) === 1,
-                'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2,
                 'Body/Subject not equal.' => !empty($messageParts[0])
                     && !empty($messageParts[2])
-                    && $messageParts[0] !== $messageParts[2]
+                    && $messageParts[0] !== $messageParts[2],
+                'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2
             ];
 
-            if (!empty($messageParts) && count($messageParts) > 2) {
+            if ($tests['Body (line 1): Min. 3 words.']) {
                 $messageParts = array_splice($messageParts, 2);
                 $i = 0;
                 foreach ($messageParts as $part) {
@@ -103,6 +103,7 @@ class CommitMessages extends Command
                 }
             } else {
                 $tests['Body (line 1): Max. 72 characters.'] = false;
+                $tests['Body (line ' . $i . '): No unnecessary spaces.'] = false;
             }
 
             if (in_array(false, $tests, true)) {
