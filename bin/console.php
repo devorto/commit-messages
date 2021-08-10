@@ -1,22 +1,9 @@
 <?php
 
-use App\Commands\BranchNameConvention;
-use App\Commands\CommitMessages;
-use App\Commands\Labels;
-use App\Services\CodeOwnersFile;
-use App\Services\GithubActionConfig;
-use App\Services\GithubApiCommands;
-use Symfony\Component\Console\Application;
+use App\Services\Application;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $app = new Application('Devorto Commit Messages', '1.0.0');
-
-$config = new GithubActionConfig();
-$commands = new GithubApiCommands($config);
-$codeOwners = new CodeOwnersFile();
-
-$app->add(new CommitMessages($config, $commands));
-$app->add(new BranchNameConvention($config, $commands, $codeOwners));
-$app->add(new Labels($commands, $config));
+$app->addDirectory(__DIR__ . '/../src/Commands', 'App\Commands');
 $app->run();
