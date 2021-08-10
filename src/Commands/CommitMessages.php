@@ -73,75 +73,127 @@ class CommitMessages extends Command
             return 1;
         }
 
+        $titles = [];
+
         $exitCode = 0;
         foreach ($commitHashes as $commitHash) {
             $message = shell_exec('git log --format=%B -n 1 ' . $commitHash);
-            $output->writeln(["Validating commit message:", $message, '']);
+            $output->writeln(['Validating commit message:', $message, '']);
 
-            if (preg_match("/.{0,50}\n\n.{20,}/", $message) !== 1) {
-                $this->placeComment();
-                $exitCode = 1;
-                break;
+            $messageParts = explode("\n", $message);
+            $titles[$commitHash] = empty($messageParts[0]) ? '' : trim($messageParts[0]);
+
+            $tests = [
+                'Subject: Max. 50 characters.' => !empty($messageParts[0]) && mb_strlen($messageParts[0]) < 50,
+                'Subject: Min. 3 words.' => !empty($messageParts[0]) && count(explode(' ', $messageParts[0])) > 2,
+                'Subject: No unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
+                'Empty line between subject/body.' => preg_match('/.*\n\n.*/', $message) === 1,
+                'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2,
+                'Body/Subject not equal.' => !empty($messageParts[0])
+                    && !empty($messageParts[2])
+                    && $messageParts[0] !== $messageParts[2]
+            ];
+
+            if (!empty($messageParts) && count($messageParts) > 2) {
+                $messageParts = array_splice($messageParts, 2);
+                $i = 0;
+                foreach ($messageParts as $part) {
+                    $tests['Body (line ' . ++$i . '): Max. 72 characters.'] = mb_strlen($part) < 73;
+                    $tests['Body (line ' . $i . '): No unnecessary spaces.'] = trim($part) !== $part;
+                }
+            } else {
+                $tests['Body (line 1): Max. 72 characters.'] = false;
             }
 
-            if (!$this->messageLengthValid($message)) {
-                $this->placeComment();
+            if (in_array(false, $tests, true)) {
+                $this->placeCommitComment($commitHash, $tests);
                 $exitCode = 1;
-                break;
             }
+        }
+
+        $duplicates = $this->duplicateTitles($titles);
+        if (!empty($duplicates)) {
+            $this->placeComment($duplicates);
+            $exitCode = 1;
         }
 
         return $exitCode;
     }
 
     /**
+     * @param string $commitHash
+     * @param array $tests
+     */
+    protected function placeCommitComment(string $commitHash, array $tests): void
+    {
+        // Is there already a comment on this commit?
+        if (!empty($this->apiCommands->getCommitComments($commitHash))) {
+            return;
+        }
+
+        $message = <<<MESSAGE
+Invalid commit message, structure should be:
+```
+Subject (Min. 3 words. Max. 50 characters).
+-- blank line --
+Long description, can be multiple lines (Min. 3 words, Max. 72 characters per line).
+```
+
+MESSAGE;
+        foreach ($tests as $test => $result) {
+            $message .= sprintf("- [%s] %s\n", $result ? 'x' : ' ', $test);
+        }
+
+        $this->apiCommands->placeCommitComment($commitHash, $message);
+    }
+
+    /**
      * Add comment to github.
      */
-    protected function placeComment(): void
+    protected function placeComment(array $duplicates): void
     {
         $message = <<<MESSAGE
-Pull request has one or more commits with invalid format.
-The format of a commit should be:
-```
-Subject (Min 3 words. Max 50 characters.)
--- blank line --
-Long description, can be multiple lines (Min 20 characters, Max 72 characters per line)
-```
+Repetitive commits found, make sure commits are unique or combined:
+
 MESSAGE;
+        foreach ($duplicates as $title => $hashes) {
+            $message .= $title . ' (' . implode(', ', $hashes) . ')' . PHP_EOL;
+        }
+
         $this->apiCommands->placeIssueComment($message);
     }
 
     /**
-     * Validate commit message length.
+     * @param array $titles
      *
-     * @param string $message
-     *
-     * @return bool
+     * @return array
      */
-    protected function messageLengthValid(string $message): bool
+    protected function duplicateTitles(array $titles): array
     {
-        // Split lines.
-        $message = array_filter(explode("\n", $message), 'trim');
-        if (empty($message)) {
-            return false;
-        }
+        $duplicates = [];
 
-        // Remove title and empty line.
-        $body = array_shift($message);
-        if (count(explode(' ', $body)) < 3) {
-            return false;
-        }
+        $titles = array_map(
+            function (string $title): string {
+                // Strip titles a little for this check.
+                return trim($title, " \t\n\r\0\x0B.");
+            },
+            $titles
+        );
 
-        if (empty($message)) {
-            return false;
-        }
+        foreach ($titles as $hash => $title) {
+            // Copy all titles.
+            $copy = $titles;
 
-        foreach ($message as $line) {
-            if (mb_strlen($line) > 72) {
-                return false;
+            // Unset our hash, so we won't find ourselves.
+            unset($copy[$hash]);
+
+            // Find duplicate.
+            if (in_array($title, $copy, true)) {
+                $duplicates[$title][] = $hash;
             }
         }
 
-        return true;
+        // Make sure sub-arrays only have non-duplicate hashes.
+        return array_map('array_unique', $duplicates);
     }
 }
