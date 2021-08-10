@@ -99,7 +99,7 @@ class CommitMessages extends Command
                 $i = 0;
                 foreach ($messageParts as $part) {
                     $tests['Body (line ' . ++$i . '): Max. 72 characters.'] = mb_strlen($part) < 73;
-                    $tests['Body (line ' . $i . '): No unnecessary spaces.'] = trim($part) !== $part;
+                    $tests['Body (line ' . $i . '): No unnecessary spaces.'] = trim($part) === $part;
                 }
             } else {
                 $tests['Body (line 1): Max. 72 characters.'] = false;
