@@ -87,10 +87,11 @@ class CommitMessages extends Command
                 'Subject: Max. 50 characters.' => !empty($messageParts[0]) && mb_strlen($messageParts[0]) < 50,
                 'Subject: Min. 3 words.' => !empty($messageParts[0]) && count(explode(' ', $messageParts[0])) > 2,
                 'Subject: No unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
+                'Subject: No ending dot.' => !empty($messageParts[0]) && substr(trim($messageParts[0]), -1) !== '.',
                 'Empty line between subject/body.' => preg_match('/.*\n\n.*/', $message) === 1,
-                'Body/Subject not equal.' => !empty($messageParts[0])
+                'Subject not in body.' => !empty($messageParts[0])
                     && !empty($messageParts[2])
-                    && $messageParts[0] !== $messageParts[2],
+                    && stripos($messageParts[2], trim($messageParts[0], " \t\n\r\0\x0B.")) !== false,
                 'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2
             ];
 
@@ -103,7 +104,7 @@ class CommitMessages extends Command
                 }
             } else {
                 $tests['Body (line 1): Max. 72 characters.'] = false;
-                $tests['Body (line ' . $i . '): No unnecessary spaces.'] = false;
+                $tests['Body (line 1): No unnecessary spaces.'] = false;
             }
 
             if (in_array(false, $tests, true)) {
