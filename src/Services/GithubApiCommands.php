@@ -205,7 +205,7 @@ class GithubApiCommands
             $curl,
             [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST => 'PATCH',
+                CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => json_encode(['name' => $name, 'color' => $color, 'description' => $description]),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
