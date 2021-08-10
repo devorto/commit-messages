@@ -40,6 +40,7 @@ class GithubApiCommands
         curl_setopt_array(
             $curl,
             [
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => json_encode(['body' => $message]),
                 CURLOPT_HTTPHEADER => [
@@ -113,6 +114,7 @@ class GithubApiCommands
         curl_setopt_array(
             $curl,
             [
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => json_encode(['body' => $comment, 'position' => 0]),
                 CURLOPT_HTTPHEADER => [
@@ -138,8 +140,124 @@ class GithubApiCommands
         curl_setopt_array(
             $curl,
             [
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'PATCH',
                 CURLOPT_POSTFIELDS => json_encode(['state' => 'closed']),
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    public function getLabels(): array
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/labels',
+            $this->config->apiUrl(),
+            $this->config->repository()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        $data = curl_exec($curl);
+        $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        if ($status !== 200) {
+            throw new RuntimeException(sprintf('Github endpoint error (%s): %s', $status, $data));
+        }
+
+        if (empty($data)) {
+            return [];
+        }
+
+        $data = json_decode($data, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new RuntimeException(json_last_error_msg());
+        }
+
+        return $data;
+    }
+
+    public function createLabel(string $name, string $color, string $description): void
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/labels',
+            $this->config->apiUrl(),
+            $this->config->repository()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'PATCH',
+                CURLOPT_POSTFIELDS => json_encode(['name' => $name, 'color' => $color, 'description' => $description]),
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    public function deleteLabel(string $name): void
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/labels/%s',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $name
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'DELETE',
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    public function setPullRequestLabel(string ...$label): void
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/issues/%s/labels',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $this->config->pullRequestNumber()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'PUT',
+                CURLOPT_POSTFIELDS => json_encode(['labels' => $label]),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
                     'Content-Type: application/json',

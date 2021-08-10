@@ -2,6 +2,7 @@
 
 use App\Commands\BranchNameConvention;
 use App\Commands\CommitMessages;
+use App\Commands\Labels;
 use App\Services\CodeOwnersFile;
 use App\Services\GithubActionConfig;
 use App\Services\GithubApiCommands;
@@ -17,4 +18,5 @@ $codeOwners = new CodeOwnersFile();
 
 $app->add(new CommitMessages($config, $commands));
 $app->add(new BranchNameConvention($config, $commands, $codeOwners));
+$app->add(new Labels($commands, $config));
 $app->run();
