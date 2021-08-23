@@ -135,7 +135,7 @@ class Labels extends Command
                         $this->apiCommands->createLabel(
                             $update,
                             $labels[$update]['color'],
-                            $labels['update']['description']
+                            $labels[$update]['description']
                         );
                     }
                     break;
