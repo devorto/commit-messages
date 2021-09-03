@@ -8,6 +8,9 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Checks if commit doesn't only contain whitespace changes.
+ */
 class Whitespace extends Command
 {
     /**
@@ -39,7 +42,7 @@ class Whitespace extends Command
     {
         $this
             ->setName('whitespace')
-            ->setDescription('Check if commits are only formatting');
+            ->setDescription('Check if commits only contain formatting.');
     }
 
     /**
@@ -52,42 +55,37 @@ class Whitespace extends Command
     {
         exec(
             sprintf(
-                'git diff origin/%s..origin/%s',
+                'git log origin/%s..origin/%s --pretty=format:"%%H"',
                 $this->config->baseRef(),
                 $this->config->headRef()
             ),
-            $nonWhiteSpace,
+            $commitHashes,
             $return
         );
 
         if ($return !== 0) {
-            $output->writeln('Could not generate diff for commits.');
+            $output->writeln('Could not generate history for commit hashes.');
 
             return 1;
         }
 
-        exec(
-            sprintf(
-                'git diff -w origin/%s..origin/%s',
-                $this->config->baseRef(),
-                $this->config->headRef()
-            ),
-            $whiteSpaced,
-            $return
-        );
+        $exitCode = 0;
+        foreach ($commitHashes as $commitHash) {
+            exec('git diff ' . $commitHash, $diff, $return1);
+            exec('git diff -w ' . $commitHash, $diffWhitespace, $return2);
 
-        if ($return !== 0) {
-            $output->writeln('Could not generate diff for commits.');
+            if ($return1 !== 0 || $return2 !== 0) {
+                $output->writeln('Could not diff for commit hash: ' . $commitHash);
 
-            return 1;
+                return 1;
+            }
+
+            if ($diff != $diffWhitespace) {
+                $exitCode = 1;
+                $this->commands->placeCommitComment($commitHash, 'Formatting commits are not allowed.');
+            }
         }
 
-        if ($nonWhiteSpace !== $whiteSpaced) {
-            $output->writeln('Commits with only formatting detected.');
-
-            return 1;
-        }
-
-        return 0;
+        return $exitCode;
     }
 }
