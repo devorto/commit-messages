@@ -86,10 +86,10 @@ class CommitMessages extends Command
             $tests = [
                 'Subject: Max. 50 characters.' => !empty($messageParts[0]) && mb_strlen($messageParts[0]) < 50,
                 'Subject: Min. 3 words.' => !empty($messageParts[0]) && count(explode(' ', $messageParts[0])) > 2,
-                'Subject: No unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
-                'Subject: No ending dot.' => !empty($messageParts[0]) && substr(trim($messageParts[0]), -1) !== '.',
+                'Subject: Must not have unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
+                'Subject: Must not end with a dot.' => !empty($messageParts[0]) && substr(trim($messageParts[0]), -1) !== '.',
                 'Empty line between subject/body.' => preg_match('/.*\n\n.*/', $message) === 1,
-                'Subject not in body.' => !empty($messageParts[0])
+                'Subject should not be repeated in body.' => !empty($messageParts[0])
                     && !empty($messageParts[2])
                     && stripos($messageParts[2], trim($messageParts[0], " \t\n\r\0\x0B.")) === false,
                 'Body (line 1): Min. 3 words.' => !empty($messageParts[2]) && count(explode(' ', $messageParts[2])) > 2
@@ -100,11 +100,11 @@ class CommitMessages extends Command
                 $i = 0;
                 foreach ($messageParts as $part) {
                     $tests['Body (line ' . ++$i . '): Max. 72 characters.'] = mb_strlen($part) < 73;
-                    $tests['Body (line ' . $i . '): No unnecessary spaces.'] = trim($part) === $part;
+                    $tests['Body (line ' . $i . '): Must not have unnecessary spaces.'] = trim($part) === $part;
                 }
             } else {
                 $tests['Body (line 1): Max. 72 characters.'] = false;
-                $tests['Body (line 1): No unnecessary spaces.'] = false;
+                $tests['Body (line 1): Must not have unnecessary spaces.'] = false;
             }
 
             if (in_array(false, $tests, true)) {
