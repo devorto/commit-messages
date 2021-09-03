@@ -1,0 +1,16 @@
+name: Deploy
+on:
+  release:
+    types: [published]
+jobs:
+  job-1:
+    name: Generate Phar File
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup
+        run: |
+          git clone https://${{ github.actor }}:${{ github.token }}@github.com/${{ github.repository }}.git .
+      - name: Create Phar
+        run: php --define phar.readonly=0 .github/workflows/create-phar.php
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
