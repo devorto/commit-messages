@@ -2,6 +2,7 @@
 
 use App\Commands\Assignee;
 use App\Commands\BranchNameConvention;
+use App\Commands\CodeOwner;
 use App\Commands\CommitMessages;
 use App\Commands\Labels;
 use App\Services\CodeOwnersFile;
@@ -21,4 +22,5 @@ $app->add(new Assignee($config, $commands));
 $app->add(new BranchNameConvention($config, $commands, $owner));
 $app->add(new CommitMessages($config, $commands));
 $app->add(new Labels($commands, $config));
+$app->add(new CodeOwner($commands, $config, $owner));
 $app->run();
