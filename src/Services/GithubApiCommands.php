@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -304,6 +305,41 @@ class GithubApiCommands
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'POST',
                 CURLOPT_POSTFIELDS => json_encode(['assignees' => $assignee]),
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3+json',
+                    'Content-Type: application/json',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        curl_exec($curl);
+        curl_close($curl);
+    }
+
+    /**
+     * @param string $message
+     * @param string $event APPROVE, REQUEST_CHANGES or COMMENT
+     */
+    public function addPullRequestReview(string $message, string $event): void
+    {
+        $event = strtoupper($event);
+        if (!in_array($event, ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'], true)) {
+            throw new InvalidArgumentException('Wrong event type.');
+        }
+
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/pulls/%s/reviews',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $this->config->pullRequestNumber()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => json_encode(['body' => $message, 'event' => $event]),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
                     'Content-Type: application/json',
