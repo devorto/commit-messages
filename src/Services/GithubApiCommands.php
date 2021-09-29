@@ -103,9 +103,19 @@ class GithubApiCommands
     /**
      * @param string $commitHash
      * @param string $comment
+     * @param string|null $path
+     * @param int|null $line
      */
-    public function placeCommitComment(string $commitHash, string $comment): void
+    public function placeCommitComment(string $commitHash, string $comment, string $path = null, int $line = null): void
     {
+        $data = ['body' => $comment];
+        if (empty($path)) {
+            $data['position'] = 0;
+        } else {
+            $data['line'] = $line;
+            $data['path'] = $path;
+        }
+
         $curl = curl_init(sprintf(
             '%s/repos/%s/commits/%s/comments',
             $this->config->apiUrl(),
@@ -117,7 +127,7 @@ class GithubApiCommands
             [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode(['body' => $comment, 'position' => 0]),
+                CURLOPT_POSTFIELDS => json_encode($data),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
                     'Content-Type: application/json',
