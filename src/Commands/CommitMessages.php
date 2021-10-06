@@ -177,7 +177,7 @@ MESSAGE;
         $titles = array_map(
             function (string $title): string {
                 // Strip titles a little for this check.
-                return trim($title, " \t\n\r\0\x0B.");
+                return trim(strtolower($title), " \t\n\r\0\x0B.");
             },
             $titles
         );
