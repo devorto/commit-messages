@@ -84,7 +84,7 @@ class CommitMessages extends Command
             $titles[$commitHash] = empty($messageParts[0]) ? '' : trim($messageParts[0]);
 
             $tests = [
-                'Subject: Max. 50 characters.' => !empty($messageParts[0]) && mb_strlen($messageParts[0]) < 50,
+                'Subject: Max. 50 characters.' => !empty($messageParts[0]) && mb_strlen($messageParts[0]) < 51,
                 'Subject: Min. 3 words.' => !empty($messageParts[0]) && count(explode(' ', $messageParts[0])) > 2,
                 'Subject: Must not have unnecessary spaces.' => !empty($messageParts[0]) && trim($messageParts[0]) === $messageParts[0],
                 'Subject: Must not end with a dot.' => !empty($messageParts[0]) && substr(trim($messageParts[0]), -1) !== '.',
