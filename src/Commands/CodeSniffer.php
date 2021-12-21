@@ -90,6 +90,9 @@ class CodeSniffer extends Command
                     $file,
                     $message['line']
                 );
+                $output->writeln('File: ' . $file);
+                $output->writeln('Line: ' . $message['line']);
+                $output->writeln('Message: ' . $message['message']);
             }
         }
 
