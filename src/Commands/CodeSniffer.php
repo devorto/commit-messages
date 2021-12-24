@@ -64,11 +64,13 @@ class CodeSniffer extends Command
 
         exec($path . ' --report-json', $json, $code);
         if ($code !== 0 && empty($json)) {
+            $output->writeln('No json generated');
             return 1;
         }
 
         $json = json_decode(implode('', $json), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
+            $output->writeln('Json Error:' . json_last_error_msg());
             return 1;
         }
 
