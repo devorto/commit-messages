@@ -72,8 +72,6 @@ class CodeSniffer extends Command
             return 1;
         }
 
-        $len = strlen(getcwd());
-
         $code = 0;
         foreach ($json['files'] as $file => $results) {
             if (empty($results['messages'])) {
@@ -81,7 +79,7 @@ class CodeSniffer extends Command
             }
 
             $code = 1;
-            $file = ltrim('/', substr($file, $len));
+            $file = ltrim(str_replace(getcwd(), '', $file), '/');
 
             foreach ($results['messages'] as $message) {
                 $this->apiCommands->placeCommitComment(
