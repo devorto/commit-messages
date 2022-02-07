@@ -101,18 +101,22 @@ class GithubApiCommands
     }
 
     /**
-     * @param string $commitHash
-     * @param string $comment
-     * @param string|null $path
-     * @param int|null $line
+     * @param string $commitHash Full commit hash (40 characters).
+     * @param string $comment Comment you want to place, use \n for multi line and markup is possible.
+     * @param string|null $path Leave empty for a global commit comment, otherwise place it on file in given commit.
+     * @param int $position Git diff position.
      */
-    public function placeCommitComment(string $commitHash, string $comment, string $path = null, int $line = null): void
-    {
-        $data = ['body' => $comment];
-        if (empty($path)) {
-            $data['position'] = 0;
-        } else {
-            $data['line'] = $line;
+    public function placeCommitComment(
+        string $commitHash,
+        string $comment,
+        string $path = null,
+        int $position = 0
+    ): void {
+        $data = [
+            'body' => $comment,
+            'position' => $position
+        ];
+        if (!empty($path)) {
             $data['path'] = $path;
         }
 
@@ -330,12 +334,19 @@ class GithubApiCommands
     /**
      * @param string $message
      * @param string $event APPROVE, REQUEST_CHANGES or COMMENT
+     * @param string $commitHash
+     * @param array $comments
      */
-    public function addPullRequestReview(string $message, string $event): void
+    public function addPullRequestReview(string $message, string $event, string $commitHash, array $comments = []): void
     {
         $event = strtoupper($event);
         if (!in_array($event, ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'], true)) {
             throw new InvalidArgumentException('Wrong event type.');
+        }
+
+        $data = ['body' => $message, 'event' => $event, 'commit_id' => $commitHash];
+        if (!empty($comments)) {
+            $data['comments'] = $comments;
         }
 
         $curl = curl_init(sprintf(
@@ -349,7 +360,7 @@ class GithubApiCommands
             [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => json_encode(['body' => $message, 'event' => $event]),
+                CURLOPT_POSTFIELDS => json_encode($data),
                 CURLOPT_HTTPHEADER => [
                     'Accept: application/vnd.github.v3+json',
                     'Content-Type: application/json',
@@ -360,5 +371,41 @@ class GithubApiCommands
         );
         curl_exec($curl);
         curl_close($curl);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPullRequestDiff(): string
+    {
+        $curl = curl_init(sprintf(
+            '%s/repos/%s/pulls/%s',
+            $this->config->apiUrl(),
+            $this->config->repository(),
+            $this->config->pullRequestNumber()
+        ));
+        curl_setopt_array(
+            $curl,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 3,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/vnd.github.v3.diff',
+                    'Authorization: Token ' . $this->config->token(),
+                    'User-Agent: ' . $this->config->actor()
+                ]
+            ]
+        );
+        $response = curl_exec($curl);
+        $info = curl_getinfo($curl);
+        curl_close($curl);
+
+        if ($info['http_code'] !== 200) {
+            throw new RuntimeException('Could not get pull request diff.');
+        }
+
+        return $response;
     }
 }

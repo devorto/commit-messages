@@ -82,7 +82,8 @@ class CodeOwner extends Command
 
         $this->apiCommands->addPullRequestReview(
             'Pull request automatically approved, pull request is done by a code owner.',
-            'APPROVE'
+            'APPROVE',
+            $this->config->sha()
         );
 
         return 0;
