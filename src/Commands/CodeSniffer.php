@@ -128,7 +128,6 @@ class CodeSniffer extends Command
             $this->apiCommands->addPullRequestReview(
                 "CodeSniffer found some issues, please check your code.\n\n$body",
                 'REQUEST_CHANGES',
-                $this->config->sha(),
                 $comments
             );
 

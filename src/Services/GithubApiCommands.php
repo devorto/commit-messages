@@ -337,14 +337,14 @@ class GithubApiCommands
      * @param string $commitHash
      * @param array $comments
      */
-    public function addPullRequestReview(string $message, string $event, string $commitHash, array $comments = []): void
+    public function addPullRequestReview(string $message, string $event, array $comments = []): void
     {
         $event = strtoupper($event);
         if (!in_array($event, ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'], true)) {
             throw new InvalidArgumentException('Wrong event type.');
         }
 
-        $data = ['body' => $message, 'event' => $event, 'commit_id' => $commitHash];
+        $data = ['body' => $message, 'event' => $event];
         if (!empty($comments)) {
             $data['comments'] = $comments;
         }
