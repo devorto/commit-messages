@@ -355,6 +355,9 @@ class GithubApiCommands
             $this->config->repository(),
             $this->config->pullRequestNumber()
         ));
+
+        echo "\n\n\n\n" . json_encode($data, JSON_PRETTY_PRINT) . "\n\n\n\n";
+
         curl_setopt_array(
             $curl,
             [
@@ -373,7 +376,9 @@ class GithubApiCommands
         $info = curl_getinfo($curl);
         curl_close($curl);
 
-        if ($info['http_code'] !== 201) {
+        echo "\n\n\n\n" . $response . "\n\n\n\n";
+
+        if ($info['http_code'] !== 200) {
             throw new RuntimeException('Failed placing pull request review: ' . $response);
         }
     }
