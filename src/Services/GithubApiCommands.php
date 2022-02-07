@@ -369,8 +369,13 @@ class GithubApiCommands
                 ]
             ]
         );
-        curl_exec($curl);
+        $response = curl_exec($curl);
+        $info = curl_getinfo($curl);
         curl_close($curl);
+
+        if ($info['http_code'] !== 201) {
+            throw new RuntimeException('Failed placing pull request review: ' . $response);
+        }
     }
 
     /**
