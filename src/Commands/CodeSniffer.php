@@ -127,7 +127,7 @@ class CodeSniffer extends Command
         if (!empty($comments) || !empty($body)) {
             $this->apiCommands->addPullRequestReview(
                 "CodeSniffer found some issues, please check your code.\n\n$body",
-                'REQUEST_CHANGES',
+                'COMMENT',
                 $comments
             );
 
