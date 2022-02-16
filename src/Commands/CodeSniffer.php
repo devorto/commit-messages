@@ -157,9 +157,9 @@ class CodeSniffer extends Command
             $files[$lastFile][] = $line;
         }
 
-        // Remove deleted files from diff.
+        // Remove deleted and renamed only files from diff.
         $files = array_filter($files, function (array $diff) {
-            return strpos($diff[0], 'deleted file') === false;
+            return stripos($diff[0], 'deleted file') === false && stripos($diff[0], 'similarity index 100%') === false;
         });
 
         return array_map(
@@ -191,6 +191,7 @@ class CodeSniffer extends Command
                             $position++;
                             break;
                         case '':
+                        case '\\':
                             // Do nothing.
                             break;
                         default:
