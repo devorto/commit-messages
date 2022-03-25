@@ -195,12 +195,12 @@ class CodeSniffer extends Command
                             // Do nothing.
                             break;
                         default:
-                            throw new RuntimeException('Something funky happend...');
+                            throw new RuntimeException('Could not parse git diff, unknown character: ' . substr($line, 0, 1));
                     }
                 }
 
                 if (empty($results)) {
-                    throw new RuntimeException('Something funky happend...');
+                    throw new RuntimeException('Diff is empty?');
                 }
 
                 return $results;
