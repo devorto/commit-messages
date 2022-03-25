@@ -174,7 +174,7 @@ class CodeSniffer extends Command
                 $position = 0;
                 $currentLine = 0;
                 foreach ($diff as $line) {
-                    if (1 === preg_match('/^@@ [^\s]+ \+([0-9]+),[0-9]+ @@/', $line, $matches)) {
+                    if (1 === preg_match('/^@@ [^\s]+ \+([0-9]+)(,[0-9]+)? @@/', $line, $matches)) {
                         $currentLine = (int)$matches[1];
                         $position++;
                         continue;
