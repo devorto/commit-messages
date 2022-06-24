@@ -159,6 +159,10 @@ class CodeSniffer extends Command
 
         // Remove deleted and renamed only files from diff.
         $files = array_filter($files, function (array $diff) {
+            if (!empty(preg_grep('/^binary files (.+) and (.+) differ$/i', $diff))) {
+                return false;
+            }
+
             return stripos($diff[0], 'deleted file') === false && stripos($diff[0], 'similarity index 100%') === false;
         });
 
