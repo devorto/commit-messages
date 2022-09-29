@@ -171,6 +171,10 @@ class CodeSniffer extends Command
                 $results = [];
 
                 $index = preg_grep('/^@@[-+,0-9 ]+@@/', $diff);
+                if (empty($index)) {
+                    return $results;
+                }
+
                 for ($i = 0; $i < key($index); $i++) {
                     unset($diff[$i]);
                 }
@@ -199,7 +203,8 @@ class CodeSniffer extends Command
                             // Do nothing.
                             break;
                         default:
-                            throw new RuntimeException('Could not parse git diff, unknown character: ' . substr($line, 0, 1));
+                            throw new RuntimeException('Could not parse git diff, unknown character: ' . substr($line,
+                                    0, 1));
                     }
                 }
 
